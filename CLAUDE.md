@@ -148,3 +148,30 @@ The chat system is built around the AgentTab concept - each provider gets its ow
 2. Modify backup manager for new data structures
 3. Update visualization components for new node/relationship types
 4. Test data migration compatibility
+
+## Production Deployment
+
+See `PRODUCTION_CHECKLIST.md` for a comprehensive deployment guide covering:
+- Critical pre-launch fixes
+- Security hardening
+- Infrastructure setup
+- CI/CD pipeline configuration
+- Monitoring and observability
+
+### Quick Production Commands
+```bash
+# Generate secrets
+openssl rand -base64 32
+
+# Security audit
+npm audit
+
+# Build and test
+npm run build
+
+# Deploy to Firebase
+npm run firebase:deploy
+
+# View function logs
+npm run functions:logs
+```

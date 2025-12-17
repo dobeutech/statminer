@@ -20,10 +20,8 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 
   const getProviderStatus = (provider: LLMProvider) => {
     const isActive = activeProviders.includes(provider.id);
-    const hasApiKey = provider.apiKey && provider.apiKey.length > 0;
     
     if (isActive) return { status: 'active', color: 'bg-green-500', text: 'Active' };
-    if (!hasApiKey) return { status: 'missing-key', color: 'bg-red-500', text: 'No API Key' };
     return { status: 'available', color: 'bg-gray-400', text: 'Available' };
   };
 
@@ -59,9 +57,8 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {providers.map((provider) => {
-                const { status, color, text } = getProviderStatus(provider);
+                const { color, text } = getProviderStatus(provider);
                 const isActive = activeProviders.includes(provider.id);
-                const hasApiKey = provider.apiKey && provider.apiKey.length > 0;
                 
                 return (
                   <motion.div
@@ -91,30 +88,20 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                       </div>
                       
                       {/* Toggle Switch */}
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={isActive}
-                          disabled={!hasApiKey}
-                          onChange={(e) => onProviderToggle(provider.id, e.target.checked)}
-                        />
+                      <button
+                        onClick={() => onProviderToggle(provider.id, !isActive)}
+                        className={`
+                          relative w-11 h-6 rounded-full transition-colors
+                          ${isActive ? 'bg-cyan-600' : 'bg-gray-200 dark:bg-gray-700'}
+                        `}
+                      >
                         <div className={`
-                          w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 
-                          peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-800 
-                          rounded-full peer dark:bg-gray-700 
-                          ${isActive ? 'peer-checked:bg-cyan-600' : ''}
-                          ${!hasApiKey ? 'opacity-50 cursor-not-allowed' : ''}
-                          transition-colors
-                        `}>
-                          <div className={`
-                            dot absolute top-[2px] left-[2px] bg-white 
-                            border border-gray-300 rounded-full h-5 w-5 
-                            transition-transform
-                            ${isActive ? 'translate-x-full border-white' : ''}
-                          `} />
-                        </div>
-                      </label>
+                          absolute top-0.5 left-0.5 bg-white 
+                          rounded-full h-5 w-5 
+                          transition-transform shadow
+                          ${isActive ? 'translate-x-5' : 'translate-x-0'}
+                        `} />
+                      </button>
                     </div>
                   </motion.div>
                 );

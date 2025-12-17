@@ -1,18 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
-import PWAProvider from '@/components/PWAProvider';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'StatMiner - Multi-Model Data Aggregator',
-  description: 'Comprehensive web-based data aggregator chatbot with multi-LLM support',
-  keywords: 'AI, LLM, data aggregation, statistics, OpenAI, Anthropic, Claude',
+  title: 'StatMiner - Multi-Model AI Data Aggregator',
+  description: 'AI-powered data aggregation from government and academic sources with multi-LLM analysis',
+  keywords: 'AI, LLM, data aggregation, statistics, OpenAI, Anthropic, Claude, Census, FRED, World Bank',
   authors: [{ name: 'StatMiner Team' }],
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: '#06b6d4',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -21,27 +18,29 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#06b6d4',
+};
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="StatMiner" />
-        <meta name="msapplication-TileImage" content="/icon-144.png" />
-        <meta name="msapplication-TileColor" content="#06b6d4" />
       </head>
-      <body className={inter.className}>
-        <PWAProvider>
-          {children}
-        </PWAProvider>
+      <body className={`${inter.className} bg-gray-900 text-gray-100 antialiased`}>
+        {children}
         <Analytics />
       </body>
     </html>

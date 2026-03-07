@@ -130,7 +130,8 @@ class SessionManager {
     const cutoffDate = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
     let deletedCount = 0;
 
-    for (const [sessionId, session] of this.sessions.entries()) {
+    const entries = Array.from(this.sessions.entries());
+    for (const [sessionId, session] of entries) {
       if (session.updatedAt < cutoffDate && !session.userId) {
         // Only delete anonymous sessions that are old
         this.sessions.delete(sessionId);

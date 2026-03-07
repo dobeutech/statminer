@@ -290,8 +290,14 @@ export const useChatStore = create<ChatStore>()(
         name: 'statminer-chat-store',
         partialize: (state) => ({
           sessions: state.sessions,
-          userPreferences: state.userPreferences,
-          providers: state.providers,
+          userPreferences: {
+            ...state.userPreferences,
+            apiKeys: {},
+          },
+          providers: state.providers.map(p => ({
+            ...p,
+            apiKey: undefined,
+          })),
         }),
       }
     ),

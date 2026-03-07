@@ -1,16 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
+
+const ALLOWED_PROVIDER_ENDPOINTS: Record<string, string[]> = {
+  openai: ['https://api.openai.com/'],
+  anthropic: ['https://api.anthropic.com/'],
+  openrouter: ['https://openrouter.ai/'],
+  grok: ['https://api.x.ai/'],
+};
 
 const TestApiKeySchema = z.object({
   providerId: z.string(),
   apiKey: z.string(),
-  endpoint: z.string(),
+  endpoint: z.string().url(),
 });
 
 export async function POST(request: NextRequest) {
   try {
+    const authSession = await getServerSession();
+    if (!authSession?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { providerId, apiKey, endpoint } = TestApiKeySchema.parse(body);
+
+    const allowedPrefixes = ALLOWED_PROVIDER_ENDPOINTS[providerId];
+    if (!allowedPrefixes || !allowedPrefixes.some(prefix => endpoint.startsWith(prefix))) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid endpoint for the specified provider' },
+        { status: 400 }
+      );
+    }
 
     let isValid = false;
 

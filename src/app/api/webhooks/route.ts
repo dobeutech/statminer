@@ -1,7 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { WebhookEvent, WebhookEndpoint } from '@/types';
+
+const ALLOWED_URL_PATTERNS = [
+  /^https:\/\//,
+];
+
+const BLOCKED_HOST_PATTERNS = [
+  /^localhost$/i,
+  /^127\.\d+\.\d+\.\d+$/,
+  /^10\.\d+\.\d+\.\d+$/,
+  /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/,
+  /^192\.168\.\d+\.\d+$/,
+  /^0\.0\.0\.0$/,
+  /^::1$/,
+  /^metadata\.google\.internal$/i,
+  /^169\.254\.\d+\.\d+$/,
+];
+
+function isUrlAllowed(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== 'https:') return false;
+    const hostname = url.hostname;
+    if (BLOCKED_HOST_PATTERNS.some(pattern => pattern.test(hostname))) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function requireAuth(request: NextRequest): Promise<boolean> {
+  const session = await getServerSession();
+  return !!session?.user;
+}
 
 // Webhook event schema
 const WebhookEventSchema = z.object({
@@ -31,6 +65,13 @@ function verifyWebhookSignature(
 // GET: List registered webhooks
 export async function GET(request: NextRequest) {
   try {
+    if (!(await requireAuth(request))) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const webhooks = Array.from(webhookEndpoints.values()).map(webhook => ({
       id: webhook.id,
       url: webhook.url,
@@ -61,6 +102,13 @@ export async function POST(request: NextRequest) {
 
     // Register new webhook endpoint
     if (webhookAction === 'register') {
+      if (!(await requireAuth(request))) {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+
       const body = await request.json();
       
       const RegisterSchema = z.object({
@@ -70,6 +118,13 @@ export async function POST(request: NextRequest) {
       });
 
       const { url, events, secret } = RegisterSchema.parse(body);
+
+      if (!isUrlAllowed(url)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid webhook URL. Only HTTPS URLs to public hosts are allowed.' },
+          { status: 400 }
+        );
+      }
       
       const webhookId = `webhook-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const webhook: WebhookEndpoint = {
@@ -97,6 +152,12 @@ export async function POST(request: NextRequest) {
 
     // Trigger webhook event
     if (webhookAction === 'trigger') {
+      if (!(await requireAuth(request))) {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
       const body = await request.json();
       const event = WebhookEventSchema.parse(body);
       
@@ -213,6 +274,13 @@ export async function POST(request: NextRequest) {
 // PUT: Update webhook endpoint
 export async function PUT(request: NextRequest) {
   try {
+    if (!(await requireAuth(request))) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const webhookId = request.nextUrl.searchParams.get('id');
     
     if (!webhookId) {
@@ -241,7 +309,15 @@ export async function PUT(request: NextRequest) {
 
     const updates = UpdateSchema.parse(body);
     
-    if (updates.url) webhook.url = updates.url;
+    if (updates.url) {
+      if (!isUrlAllowed(updates.url)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid webhook URL. Only HTTPS URLs to public hosts are allowed.' },
+          { status: 400 }
+        );
+      }
+      webhook.url = updates.url;
+    }
     if (updates.events) webhook.events = updates.events;
     if (updates.isActive !== undefined) webhook.isActive = updates.isActive;
 
@@ -275,6 +351,13 @@ export async function PUT(request: NextRequest) {
 // DELETE: Remove webhook endpoint
 export async function DELETE(request: NextRequest) {
   try {
+    if (!(await requireAuth(request))) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const webhookId = request.nextUrl.searchParams.get('id');
     
     if (!webhookId) {

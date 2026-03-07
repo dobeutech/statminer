@@ -25,9 +25,13 @@ class Neo4jBackupManager {
   private backups: Map<string, BackupMetadata> = new Map();
 
   constructor() {
-    const uri = process.env.NEO4J_URI!;
-    const user = process.env.NEO4J_USER!;
-    const password = process.env.NEO4J_PASSWORD!;
+    const uri = process.env.NEO4J_URI;
+    const user = process.env.NEO4J_USER;
+    const password = process.env.NEO4J_PASSWORD;
+
+    if (!uri || !user || !password) {
+      throw new Error('NEO4J_URI, NEO4J_USER, and NEO4J_PASSWORD environment variables are required');
+    }
 
     this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
   }
@@ -90,9 +94,7 @@ class Neo4jBackupManager {
           createdAt: new Date(),
           updatedAt: new Date(),
           tags: ['backup', 'auto'],
-          indexes,
-          constraints,
-        },
+        } as Neo4jDataset['metadata'] & { indexes?: any[]; constraints?: any[] },
       };
 
       // Serialize backup
@@ -177,19 +179,29 @@ class Neo4jBackupManager {
 
       // Restore nodes
       for (const node of backup.nodes) {
-        const labels = node.labels.join(':');
+        const sanitizedLabels = node.labels.map(l => l.replace(/[^a-zA-Z0-9_]/g, ''));
+        if (sanitizedLabels.length === 0 || sanitizedLabels.some(l => l.length === 0)) {
+          console.warn('Skipping node with invalid labels:', node.labels);
+          continue;
+        }
+        const labelStr = sanitizedLabels.map(l => `\`${l}\``).join(':');
         await session.run(
-          `CREATE (n:${labels}) SET n = $props`,
+          `CREATE (n:${labelStr}) SET n = $props`,
           { props: node.properties }
         );
       }
 
       // Restore relationships
       for (const rel of backup.relationships) {
+        const sanitizedType = rel.type.replace(/[^a-zA-Z0-9_]/g, '');
+        if (!sanitizedType) {
+          console.warn('Skipping relationship with invalid type:', rel.type);
+          continue;
+        }
         await session.run(
           `MATCH (a), (b) 
            WHERE id(a) = $startId AND id(b) = $endId
-           CREATE (a)-[r:${rel.type}]->(b)
+           CREATE (a)-[r:\`${sanitizedType}\`]->(b)
            SET r = $props`,
           {
             startId: neo4j.int(rel.startNodeId),
@@ -199,18 +211,15 @@ class Neo4jBackupManager {
         );
       }
 
-      // Restore indexes if available
-      if (backup.metadata.indexes) {
-        for (const index of backup.metadata.indexes) {
-          // Recreate index based on stored definition
+      const extMeta = backup.metadata as any;
+      if (extMeta.indexes) {
+        for (const index of extMeta.indexes) {
           console.log('Restoring index:', index);
         }
       }
 
-      // Restore constraints if available
-      if (backup.metadata.constraints) {
-        for (const constraint of backup.metadata.constraints) {
-          // Recreate constraint based on stored definition
+      if (extMeta.constraints) {
+        for (const constraint of extMeta.constraints) {
           console.log('Restoring constraint:', constraint);
         }
       }

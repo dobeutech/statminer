@@ -28,8 +28,8 @@ export const useWebSocket = (
     onError,
     onOpen,
     onClose,
-    reconnectAttempts = 5,
-    reconnectInterval = 3000,
+    reconnectAttempts = 2,
+    reconnectInterval = 10000,
   } = options;
 
   const [isConnected, setIsConnected] = useState(false);

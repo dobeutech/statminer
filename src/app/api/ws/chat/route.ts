@@ -38,15 +38,26 @@ const initializeSocketIO = () => {
 
       socket.on('chat-message', async (data: WebSocketMessage) => {
         try {
-          console.log('Received chat message:', data);
-          
-          // Validate the message payload
           const validatedData = ChatRequestSchema.parse(data.payload);
           
-          // Authenticate the request (optional - implement based on your auth strategy)
-          // const isValidUser = await validateApiKey(socket.handshake.auth?.token);
+          const authToken = socket.handshake.auth?.token;
+          if (!authToken) {
+            socket.emit('error', {
+              type: 'auth_error',
+              message: 'Authentication required. Provide a token in handshake auth.',
+            });
+            return;
+          }
+
+          const isValidUser = await validateApiKey(authToken);
+          if (!isValidUser) {
+            socket.emit('error', {
+              type: 'auth_error',
+              message: 'Invalid or expired authentication token.',
+            });
+            return;
+          }
           
-          // Process the chat message with multiple providers
           await handleChatMessage(socket, validatedData, data.sessionId);
           
         } catch (error) {

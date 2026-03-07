@@ -19,8 +19,8 @@ const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       // Send properties to the client
-      if (token) {
-        session.user.id = token.userId as string;
+      if (token && session.user) {
+        (session.user as any).id = token.userId as string;
       }
       return session;
     },

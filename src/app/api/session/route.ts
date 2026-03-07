@@ -4,6 +4,10 @@ import SessionManager from '@/lib/auth/session-manager';
 import { UserPreferences } from '@/types';
 import { z } from 'zod';
 
+function getUserId(user: { name?: string | null; email?: string | null; image?: string | null } & Record<string, unknown>): string | undefined {
+  return (user as any).id ?? user.email ?? undefined;
+}
+
 const sessionManager = SessionManager.getInstance();
 
 const PreferencesUpdateSchema = z.object({
@@ -27,17 +31,29 @@ const ApiKeySchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const authSession = await getServerSession();
+    if (!authSession?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const sessionId = request.nextUrl.searchParams.get('sessionId');
     
     let userSession;
     
     if (sessionId) {
       userSession = sessionManager.getSession(sessionId);
+      if (userSession && userSession.userId !== getUserId(authSession.user!)) {
+        return NextResponse.json(
+          { success: false, error: 'Access denied' },
+          { status: 403 }
+        );
+      }
     }
     
     if (!userSession) {
-      // Create new session
-      userSession = sessionManager.createSession(authSession?.user?.id);
+      userSession = sessionManager.createSession(getUserId(authSession.user!));
     }
 
     return NextResponse.json({
@@ -63,6 +79,14 @@ export async function GET(request: NextRequest) {
 // Update session preferences
 export async function PUT(request: NextRequest) {
   try {
+    const authSession = await getServerSession();
+    if (!authSession?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const sessionId = request.nextUrl.searchParams.get('sessionId');
     if (!sessionId) {
       return NextResponse.json(
@@ -75,8 +99,16 @@ export async function PUT(request: NextRequest) {
     
     // Validate the request body
     const validatedData = PreferencesUpdateSchema.parse(body);
+
+    const existingSession = sessionManager.getSession(sessionId);
+    if (existingSession && existingSession.userId !== getUserId(authSession.user!)) {
+      return NextResponse.json(
+        { success: false, error: 'Access denied' },
+        { status: 403 }
+      );
+    }
     
-    const success = sessionManager.updatePreferences(sessionId, validatedData);
+    const success = sessionManager.updatePreferences(sessionId, validatedData as Partial<UserPreferences>);
     
     if (!success) {
       return NextResponse.json(
@@ -111,6 +143,14 @@ export async function PUT(request: NextRequest) {
 // Store API key
 export async function POST(request: NextRequest) {
   try {
+    const authSession = await getServerSession();
+    if (!authSession?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const sessionId = request.nextUrl.searchParams.get('sessionId');
     if (!sessionId) {
       return NextResponse.json(
@@ -121,6 +161,14 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { providerId, apiKey } = ApiKeySchema.parse(body);
+
+    const existingSession = sessionManager.getSession(sessionId);
+    if (existingSession && existingSession.userId !== getUserId(authSession.user!)) {
+      return NextResponse.json(
+        { success: false, error: 'Access denied' },
+        { status: 403 }
+      );
+    }
     
     const success = sessionManager.storeApiKey(sessionId, providerId, apiKey);
     
@@ -155,11 +203,27 @@ export async function POST(request: NextRequest) {
 // Delete session
 export async function DELETE(request: NextRequest) {
   try {
+    const authSession = await getServerSession();
+    if (!authSession?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const sessionId = request.nextUrl.searchParams.get('sessionId');
     if (!sessionId) {
       return NextResponse.json(
         { success: false, error: 'Session ID is required' },
         { status: 400 }
+      );
+    }
+
+    const existingSession = sessionManager.getSession(sessionId);
+    if (existingSession && existingSession.userId !== getUserId(authSession.user!)) {
+      return NextResponse.json(
+        { success: false, error: 'Access denied' },
+        { status: 403 }
       );
     }
 

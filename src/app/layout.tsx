@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/react';
 import PWAProvider from '@/components/PWAProvider';
 import './globals.css';
 
@@ -42,7 +41,6 @@ export default function RootLayout({
         <PWAProvider>
           {children}
         </PWAProvider>
-        <Analytics />
       </body>
     </html>
   );

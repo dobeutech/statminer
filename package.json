@@ -43,7 +43,7 @@
     "@types/react-dom": "^18",
     "@types/d3": "^7.4.3",
     "eslint": "^8",
-    "eslint-config-next": "14.2.0",
+    "eslint-config-next": "16.1.6",
     "typescript": "^5",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "devCommand": "next dev -p 3000",
+  "installCommand": "npm install",
+  "regions": ["iad1"],
+  "functions": {
+    "src/app/api/chat/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/health/route.ts": {
+      "maxDuration": 10
+    }
+  }
+}

@@ -1,0 +1,12 @@
+.git
+.github
+.next
+node_modules
+attached_assets
+tests
+.env
+.env.local
+.env.development
+.env.production
+*.log
+.DS_Store

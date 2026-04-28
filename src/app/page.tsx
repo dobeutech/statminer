@@ -1,39 +1,47 @@
-'use client';
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import { LandingHero } from '@/components/LandingHero';
 
-import React, { useState, useEffect } from 'react';
-import { useChatStore } from '@/lib/stores/chat-store';
-import MultiAgentChat from '@/components/MultiAgentChat';
-import ApiKeyPrompt from '@/components/ApiKeyPrompt';
+const ChatWorkspace = dynamic(() => import('@/components/ChatWorkspace'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[60vh] items-center justify-center text-fg-muted">
+      <div className="flex items-center gap-2">
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+        <span className="typing-dot" />
+        <span className="ml-3 font-mono text-sm">Loading workspace…</span>
+      </div>
+    </div>
+  ),
+});
 
-export default function Home() {
-  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
-  const { providers, createSession, currentSessionId } = useChatStore();
-
-  useEffect(() => {
-    if (!currentSessionId) {
-      createSession('Default Session');
-    }
-  }, [currentSessionId, createSession]);
-
-  const hasConfiguredProvider = providers.some(
-    (p) => p.apiKey && p.apiKey.length > 0
-  );
-
+export default function HomePage() {
   return (
-    <main className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      {currentSessionId ? (
-        <MultiAgentChat sessionId={currentSessionId} />
-      ) : (
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-pulse text-gray-500 dark:text-gray-400">
-            Initializing session...
-          </div>
+    <main className="min-h-screen bg-bg-primary text-fg-body">
+      <LandingHero />
+      <section id="workspace" className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+        <Suspense>
+          <ChatWorkspace />
+        </Suspense>
+      </section>
+      <footer className="border-t border-border/60 bg-bg-secondary/50">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-3 px-4 py-8 sm:flex-row sm:items-center sm:px-6 lg:px-8">
+          <p className="text-sm text-fg-muted">
+            Built by{' '}
+            <a
+              href="https://dobeu.tech"
+              target="_blank"
+              rel="noreferrer"
+              className="text-fg-link underline-offset-4 hover:underline"
+            >
+              Dobeu Tech Solutions
+            </a>
+            . StatMiner is an open, multi-model data aggregator.
+          </p>
+          <p className="font-mono text-xs text-fg-muted">v0.1.0 · {new Date().getFullYear()}</p>
         </div>
-      )}
-
-      {showApiKeyPrompt && (
-        <ApiKeyPrompt onClose={() => setShowApiKeyPrompt(false)} />
-      )}
+      </footer>
     </main>
   );
 }

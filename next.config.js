@@ -1,26 +1,25 @@
 /** @type {import('next').NextConfig} */
-
 const nextConfig = {
+  reactStrictMode: true,
+  poweredByHeader: false,
   experimental: {
-    serverComponentsExternalPackages: ['neo4j-driver'],
+    serverComponentsExternalPackages: ['neo4j-driver', 'mongodb', 'pino'],
   },
   images: {
-    unoptimized: true,
+    formats: ['image/avif', 'image/webp'],
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        net: false,
-        dns: false,
-        tls: false,
-        fs: false,
-      };
-    }
-    return config;
-  },
-  env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ];
   },
 };
 

@@ -32,7 +32,10 @@ export default function Home() {
       )}
 
       {showApiKeyPrompt && (
-        <ApiKeyPrompt onClose={() => setShowApiKeyPrompt(false)} />
+        <ApiKeyPrompt
+          providers={providers}
+          onApiKeysConfigured={() => setShowApiKeyPrompt(false)}
+        />
       )}
     </main>
   );

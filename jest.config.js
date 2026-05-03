@@ -6,16 +6,24 @@ const createJestConfig = nextJest({
 
 const customJestConfig = {
   testEnvironment: 'jsdom',
-  setupFilesAfterSetup: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
+    'src/lib/**/*.{ts,tsx}',
+    'src/app/api/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/types/**/*',
   ],
+  coverageThreshold: {
+    global: {
+      lines: 40,
+      branches: 30,
+      functions: 35,
+      statements: 40,
+    },
+  },
 };
 
 module.exports = createJestConfig(customJestConfig);

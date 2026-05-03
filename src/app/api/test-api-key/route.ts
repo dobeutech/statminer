@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
+import logger from '@/lib/logger';
 
 const ALLOWED_PROVIDER_ENDPOINTS: Record<string, string[]> = {
   openai: ['https://api.openai.com/'],
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       providerId,
     });
   } catch (error) {
-    console.error('API key test error:', error);
+    logger.error({ err: error }, 'API key test error');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -94,7 +95,7 @@ async function testOpenAIKey(apiKey: string, endpoint: string): Promise<boolean>
 
     return response.status === 200 || response.status === 429; // 429 = rate limited but valid key
   } catch (error) {
-    console.error('OpenAI key test failed:', error);
+    logger.error({ err: error, provider: 'openai' }, 'Key test failed');
     return false;
   }
 }
@@ -117,7 +118,7 @@ async function testAnthropicKey(apiKey: string, endpoint: string): Promise<boole
 
     return response.status === 200 || response.status === 429;
   } catch (error) {
-    console.error('Anthropic key test failed:', error);
+    logger.error({ err: error, provider: 'anthropic' }, 'Key test failed');
     return false;
   }
 }
@@ -141,7 +142,7 @@ async function testOpenRouterKey(apiKey: string, endpoint: string): Promise<bool
 
     return response.status === 200 || response.status === 429;
   } catch (error) {
-    console.error('OpenRouter key test failed:', error);
+    logger.error({ err: error, provider: 'openrouter' }, 'Key test failed');
     return false;
   }
 }
@@ -163,7 +164,7 @@ async function testGrokKey(apiKey: string, endpoint: string): Promise<boolean> {
 
     return response.status === 200 || response.status === 429;
   } catch (error) {
-    console.error('Grok key test failed:', error);
+    logger.error({ err: error, provider: 'grok' }, 'Key test failed');
     return false;
   }
 }

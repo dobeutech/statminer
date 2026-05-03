@@ -40,7 +40,7 @@ const defaultProviders: LLMProvider[] = [
     id: 'openai',
     name: 'OpenAI GPT-4',
     endpoint: 'https://api.openai.com/v1/chat/completions',
-    apiKey: process.env.OPENAI_API_KEY || '',
+    apiKey: '',
     model: 'gpt-4-turbo-preview',
     supportsStreaming: true,
     maxTokens: 4096,
@@ -50,7 +50,7 @@ const defaultProviders: LLMProvider[] = [
     id: 'anthropic',
     name: 'Anthropic Claude',
     endpoint: 'https://api.anthropic.com/v1/messages',
-    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    apiKey: '',
     model: 'claude-3-opus-20240229',
     supportsStreaming: true,
     maxTokens: 4096,
@@ -60,7 +60,7 @@ const defaultProviders: LLMProvider[] = [
     id: 'openrouter',
     name: 'OpenRouter',
     endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-    apiKey: process.env.OPENROUTER_API_KEY || '',
+    apiKey: '',
     model: 'anthropic/claude-3-opus',
     supportsStreaming: true,
     maxTokens: 4096,
@@ -70,11 +70,21 @@ const defaultProviders: LLMProvider[] = [
     id: 'grok',
     name: 'Grok',
     endpoint: 'https://api.x.ai/v1/chat/completions',
-    apiKey: process.env.GROK_API_KEY || '',
+    apiKey: '',
     model: 'grok-beta',
     supportsStreaming: true,
     maxTokens: 4096,
     costPer1kTokens: 0.01,
+  },
+  {
+    id: 'requesty',
+    name: 'Requesty',
+    endpoint: 'https://router.requesty.ai/v1/chat/completions',
+    apiKey: '',
+    model: 'gpt-4-turbo-preview',
+    supportsStreaming: true,
+    maxTokens: 4096,
+    costPer1kTokens: 0.02,
   },
 ];
 
@@ -140,7 +150,18 @@ export const useChatStore = create<ChatStore>()(
         sendMessage: async (content, providerIds, sessionId) => {
           const state = get();
           set({ isStreaming: true });
-          
+
+          const apiKeys: Record<string, string> = {};
+          for (const p of state.providers) {
+            if (p.apiKey && providerIds.includes(p.id)) {
+              apiKeys[p.id] = p.apiKey;
+            }
+          }
+
+          const history = state.messages
+            .slice(-20)
+            .map(m => ({ role: m.role, content: m.content }));
+
           try {
             const response = await fetch('/api/chat', {
               method: 'POST',
@@ -152,6 +173,8 @@ export const useChatStore = create<ChatStore>()(
                 providers: providerIds,
                 sessionId: sessionId || state.currentSessionId,
                 streaming: true,
+                apiKeys,
+                history,
               }),
             });
             

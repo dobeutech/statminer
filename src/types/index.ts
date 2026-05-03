@@ -61,6 +61,11 @@ export const ChatRequestSchema = z.object({
   providers: z.array(z.string()).min(1, 'At least one provider is required'),
   sessionId: z.string().optional(),
   streaming: z.boolean().default(true),
+  apiKeys: z.record(z.string(), z.string()).optional(),
+  history: z.array(z.object({
+    role: z.string(),
+    content: z.string(),
+  })).optional(),
 });
 
 export const ApiKeyConfigSchema = z.object({

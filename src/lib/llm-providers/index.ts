@@ -1,4 +1,5 @@
 import { LLMProvider, BatchResponse } from '@/types';
+import logger from '@/lib/logger';
 
 interface StreamingCallbacks {
   onStream: (providerId: string, chunk: string, isComplete: boolean) => void;
@@ -76,7 +77,7 @@ class OpenAIProvider {
                       callbacks.onStream(request.providerId, content, false);
                     }
                   } catch (e) {
-                    console.error('Failed to parse OpenAI stream:', e);
+                    logger.error({ err: e }, 'Failed to parse OpenAI stream');
                   }
                 }
               }
@@ -174,7 +175,7 @@ class AnthropicProvider {
                       return;
                     }
                   } catch (e) {
-                    console.error('Failed to parse Anthropic stream:', e);
+                    logger.error({ err: e }, 'Failed to parse Anthropic stream');
                   }
                 }
               }
@@ -236,90 +237,102 @@ class GrokProvider {
   }
 }
 
+class RequestyProvider {
+  static async sendRequest(
+    request: ProviderRequest,
+    callbacks?: StreamingCallbacks
+  ): Promise<BatchResponse | void> {
+    // Requesty uses OpenAI-compatible API with their endpoint
+    return OpenAIProvider.sendRequest(request, callbacks);
+  }
+}
+
 // Provider registry
 const PROVIDERS = {
   openai: OpenAIProvider,
   anthropic: AnthropicProvider,
   openrouter: OpenRouterProvider,
   grok: GrokProvider,
+  requesty: RequestyProvider,
 } as const;
+
+// Provider endpoint/model configuration
+const PROVIDER_DEFAULTS: Record<string, { endpoint: string; model: string; name: string }> = {
+  openai: {
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4-turbo-preview',
+    name: 'OpenAI GPT-4',
+  },
+  anthropic: {
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    model: 'claude-3-opus-20240229',
+    name: 'Anthropic Claude',
+  },
+  openrouter: {
+    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    model: 'anthropic/claude-3-opus',
+    name: 'OpenRouter',
+  },
+  grok: {
+    endpoint: 'https://api.x.ai/v1/chat/completions',
+    model: 'grok-beta',
+    name: 'Grok',
+  },
+  requesty: {
+    endpoint: 'https://router.requesty.ai/v1/chat/completions',
+    model: 'gpt-4-turbo-preview',
+    name: 'Requesty',
+  },
+};
+
+interface SendOptions {
+  apiKeys?: Record<string, string>;
+  history?: Array<{ role: string; content: string }>;
+}
 
 // Main function to send messages to multiple providers
 export async function sendToLLMProviders(
   message: string,
   providerIds: string[],
-  callbacks?: StreamingCallbacks
+  callbacks?: StreamingCallbacks,
+  options?: SendOptions
 ): Promise<BatchResponse[]> {
-  const providers: LLMProvider[] = [
-    {
-      id: 'openai',
-      name: 'OpenAI GPT-4',
-      endpoint: 'https://api.openai.com/v1/chat/completions',
-      apiKey: process.env.OPENAI_API_KEY || '',
-      model: 'gpt-4-turbo-preview',
-      supportsStreaming: true,
-      maxTokens: 4096,
-      costPer1kTokens: 0.03,
-    },
-    {
-      id: 'anthropic',
-      name: 'Anthropic Claude',
-      endpoint: 'https://api.anthropic.com/v1/messages',
-      apiKey: process.env.ANTHROPIC_API_KEY || '',
-      model: 'claude-3-opus-20240229',
-      supportsStreaming: true,
-      maxTokens: 4096,
-      costPer1kTokens: 0.015,
-    },
-    {
-      id: 'openrouter',
-      name: 'OpenRouter',
-      endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-      apiKey: process.env.OPENROUTER_API_KEY || '',
-      model: 'anthropic/claude-3-opus',
-      supportsStreaming: true,
-      maxTokens: 4096,
-      costPer1kTokens: 0.015,
-    },
-    {
-      id: 'grok',
-      name: 'Grok',
-      endpoint: 'https://api.x.ai/v1/chat/completions',
-      apiKey: process.env.GROK_API_KEY || '',
-      model: 'grok-beta',
-      supportsStreaming: true,
-      maxTokens: 4096,
-      costPer1kTokens: 0.01,
-    },
-  ];
-
-  const selectedProviders = providers.filter(p => providerIds.includes(p.id));
   const requests: Promise<BatchResponse | void>[] = [];
 
-  for (const provider of selectedProviders) {
-    if (!provider.apiKey) {
-      console.warn(`No API key found for provider: ${provider.id}`);
+  for (const providerId of providerIds) {
+    const defaults = PROVIDER_DEFAULTS[providerId];
+    if (!defaults) {
+      logger.warn({ providerId }, 'No implementation found for provider');
       if (callbacks) {
-        callbacks.onError(provider.id, `No API key configured for ${provider.name}`);
+        callbacks.onError(providerId, `Provider ${providerId} is not supported`);
       }
       continue;
     }
 
-    const ProviderClass = PROVIDERS[provider.id as keyof typeof PROVIDERS];
-    if (!ProviderClass) {
-      console.warn(`No implementation found for provider: ${provider.id}`);
+    const apiKey = options?.apiKeys?.[providerId] || process.env[`${providerId.toUpperCase()}_API_KEY`] || '';
+    if (!apiKey) {
+      logger.warn({ providerId }, 'No API key found for provider');
       if (callbacks) {
-        callbacks.onError(provider.id, `Provider ${provider.name} is not implemented`);
+        callbacks.onError(providerId, `No API key configured for ${defaults.name}`);
       }
       continue;
     }
+
+    const ProviderClass = PROVIDERS[providerId as keyof typeof PROVIDERS];
+    if (!ProviderClass) {
+      continue;
+    }
+
+    const fullMessage = options?.history?.length
+      ? options.history.map(m => `${m.role}: ${m.content}`).join('\n') + `\nuser: ${message}`
+      : message;
 
     const request: ProviderRequest = {
-      providerId: provider.id,
-      message,
-      apiKey: provider.apiKey,
-      endpoint: provider.endpoint,
-      model: provider.model,
+      providerId,
+      message: fullMessage,
+      apiKey,
+      endpoint: defaults.endpoint,
+      model: defaults.model,
       streaming: !!callbacks,
     };
 
@@ -327,14 +340,12 @@ export async function sendToLLMProviders(
   }
 
   if (callbacks) {
-    // For streaming, we don't wait for results
     await Promise.allSettled(requests);
     return [];
   } else {
-    // For batch responses, return results
     const results = await Promise.allSettled(requests);
     return results
-      .filter((result): result is PromiseFulfilledResult<BatchResponse> => 
+      .filter((result): result is PromiseFulfilledResult<BatchResponse> =>
         result.status === 'fulfilled' && result.value !== undefined
       )
       .map(result => result.value);

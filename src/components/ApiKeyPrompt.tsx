@@ -68,6 +68,11 @@ const ApiKeyPrompt: React.FC<ApiKeyPromptProps> = ({ providers, onApiKeysConfigu
           return 'Grok API key appears to be too short';
         }
         break;
+      case 'requesty':
+        if (apiKey.length < 20) {
+          return 'Requesty API key appears to be too short';
+        }
+        break;
     }
 
     return null;
@@ -314,6 +319,8 @@ function getApiKeyInstructions(providerId: string): string {
       return ' Visit openrouter.ai/keys to get your API key.';
     case 'grok':
       return ' Visit x.ai to access your Grok API key.';
+    case 'requesty':
+      return ' Visit requesty.ai to get your API key.';
     default:
       return ' Check your provider\'s documentation for API key instructions.';
   }

@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import logger from '@/lib/logger';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -68,8 +69,22 @@ async function checkLLMProviders(): Promise<{ [key: string]: { status: 'up' | 'd
   return providers;
 }
 
-export async function GET() {
+const startedAt = Date.now();
+
+export async function GET(request: NextRequest) {
   const startTime = Date.now();
+
+  // Sentry probe: throw a test error to verify Sentry is capturing
+  const probe = request.nextUrl.searchParams.get('probe');
+  if (probe === 'sentry') {
+    try {
+      const { Sentry } = await import('@/lib/analytics/sentry');
+      Sentry.captureException(new Error('Sentry health probe test'));
+      return NextResponse.json({ probe: 'sentry', sent: true });
+    } catch {
+      return NextResponse.json({ probe: 'sentry', sent: false, error: 'Sentry not configured' });
+    }
+  }
   
   try {
     // Perform health checks
@@ -99,10 +114,12 @@ export async function GET() {
       overallStatus = 'degraded';
     }
     
-    const healthStatus: HealthStatus = {
+    const healthStatus = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version || '0.1.0',
+      buildSha: process.env.NEXT_PUBLIC_BUILD_SHA || 'dev',
+      uptime: Math.floor((Date.now() - startedAt) / 1000),
       services,
     };
     

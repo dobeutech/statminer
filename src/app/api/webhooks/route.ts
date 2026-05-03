@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { WebhookEvent, WebhookEndpoint } from '@/types';
+import logger from '@/lib/logger';
 
 const ALLOWED_URL_PATTERNS = [
   /^https:\/\//,
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
       count: webhooks.length,
     });
   } catch (error) {
-    console.error('Webhook GET error:', error);
+    logger.error({ err: error }, 'Webhook GET error');
     return NextResponse.json(
       { success: false, error: 'Failed to retrieve webhooks' },
       { status: 500 }
@@ -238,8 +239,7 @@ export async function POST(request: NextRequest) {
 
       const event = JSON.parse(rawBody);
       
-      // Process the webhook event here
-      console.log('Received webhook event:', event);
+      logger.info({ event: event.event }, 'Received webhook event');
       
       // Store event or trigger actions based on event type
       await processWebhookEvent(event);
@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error) {
-    console.error('Webhook POST error:', error);
+    logger.error({ err: error }, 'Webhook POST error');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -332,7 +332,7 @@ export async function PUT(request: NextRequest) {
       message: 'Webhook updated successfully',
     });
   } catch (error) {
-    console.error('Webhook PUT error:', error);
+    logger.error({ err: error }, 'Webhook PUT error');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -381,7 +381,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Webhook deleted successfully',
     });
   } catch (error) {
-    console.error('Webhook DELETE error:', error);
+    logger.error({ err: error }, 'Webhook DELETE error');
     return NextResponse.json(
       { success: false, error: 'Failed to delete webhook' },
       { status: 500 }
@@ -394,26 +394,18 @@ async function processWebhookEvent(event: WebhookEvent): Promise<void> {
   // Implement event-specific logic here
   switch (event.event) {
     case 'chat.message.created':
-      // Handle new chat message
-      console.log('New chat message:', event.payload);
+      logger.info({ event: event.event }, 'Processing chat.message.created');
       break;
-      
     case 'api.usage.threshold':
-      // Handle API usage threshold
-      console.log('API usage threshold reached:', event.payload);
+      logger.warn({ event: event.event }, 'API usage threshold reached');
       break;
-      
     case 'session.created':
-      // Handle new session
-      console.log('New session created:', event.payload);
+      logger.info({ event: event.event }, 'Processing session.created');
       break;
-      
     case 'provider.error':
-      // Handle provider error
-      console.log('Provider error:', event.payload);
+      logger.error({ event: event.event }, 'Provider error event received');
       break;
-      
     default:
-      console.log('Unknown webhook event:', event);
+      logger.debug({ event: event.event }, 'Unknown webhook event');
   }
 }

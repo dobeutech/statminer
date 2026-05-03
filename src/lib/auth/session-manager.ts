@@ -1,4 +1,5 @@
 import { UserSession, UserPreferences, ChatSession } from '@/types';
+import logger from '@/lib/logger';
 
 class SessionManager {
   private static instance: SessionManager;
@@ -152,10 +153,10 @@ class SessionManager {
       // For example: database, Redis, file system, etc.
       
       // For now, we'll just keep it in memory
-      console.log(`Persisting session ${sessionId}:`, session);
+      logger.info({ sessionId }, 'Persisting session');
       return true;
     } catch (error) {
-      console.error('Failed to persist session:', error);
+      logger.error({ err: error }, 'Failed to persist session');
       return false;
     }
   }
@@ -168,7 +169,7 @@ class SessionManager {
       // For now, return from memory
       return this.sessions.get(sessionId) || null;
     } catch (error) {
-      console.error('Failed to load session:', error);
+      logger.error({ err: error }, 'Failed to load session');
       return null;
     }
   }

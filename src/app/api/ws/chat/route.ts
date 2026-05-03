@@ -6,6 +6,7 @@ import { WebSocketMessage, ChatRequestSchema } from '@/types';
 import { sendToLLMProviders } from '@/lib/llm-providers';
 import { validateApiKey } from '@/lib/auth/validate-api-key';
 import { z } from 'zod';
+import logger from '@/lib/logger';
 
 let io: SocketIOServer | undefined;
 
@@ -24,16 +25,16 @@ const initializeSocketIO = () => {
     });
 
     io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
+      logger.info({ socketId: socket.id }, 'Client connected');
 
       socket.on('join-session', (sessionId: string) => {
         socket.join(sessionId);
-        console.log(`Socket ${socket.id} joined session ${sessionId}`);
+        logger.info({ socketId: socket.id, sessionId }, 'Socket joined session');
       });
 
       socket.on('leave-session', (sessionId: string) => {
         socket.leave(sessionId);
-        console.log(`Socket ${socket.id} left session ${sessionId}`);
+        logger.info({ socketId: socket.id, sessionId }, 'Socket left session');
       });
 
       socket.on('chat-message', async (data: WebSocketMessage) => {
@@ -61,7 +62,7 @@ const initializeSocketIO = () => {
           await handleChatMessage(socket, validatedData, data.sessionId);
           
         } catch (error) {
-          console.error('Chat message error:', error);
+          logger.error({ err: error }, 'Chat message error');
           socket.emit('error', {
             type: 'validation_error',
             message: error instanceof z.ZodError 
@@ -73,7 +74,7 @@ const initializeSocketIO = () => {
       });
 
       socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        logger.info({ socketId: socket.id }, 'Client disconnected');
       });
     });
   }
@@ -146,7 +147,7 @@ async function handleChatMessage(
       });
     }
   } catch (error) {
-    console.error('LLM Provider error:', error);
+    logger.error({ err: error }, 'LLM Provider error');
     socket.emit('error', {
       type: 'provider_error',
       message: 'Failed to get response from AI providers',
@@ -177,7 +178,7 @@ export async function GET(req: NextRequest) {
         }
       );
     } catch (error) {
-      console.error('WebSocket initialization error:', error);
+      logger.error({ err: error }, 'WebSocket initialization error');
       return new Response(
         JSON.stringify({
           error: 'Failed to initialize WebSocket server',

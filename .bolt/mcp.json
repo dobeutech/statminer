@@ -17,6 +17,9 @@
     },
     "composio": {
       "enabled": true
+    },
+    "shaders": {
+      "enabled": true
     }
   }
 }

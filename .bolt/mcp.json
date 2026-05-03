@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "rube": {
+      "enabled": true
+    },
+    "sentry": {
+      "enabled": true
+    },
+    "linear": {
+      "enabled": true
+    },
+    "github": {
+      "enabled": true
+    },
+    "context7": {
+      "enabled": true
+    }
+  }
+}

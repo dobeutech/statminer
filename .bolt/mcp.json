@@ -1,8 +1,5 @@
 {
   "mcpServers": {
-    "rube": {
-      "enabled": false
-    },
     "sentry": {
       "enabled": true
     },

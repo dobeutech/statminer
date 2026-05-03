@@ -1,8 +1,5 @@
 {
   "mcpServers": {
-    "sentry": {
-      "enabled": true
-    },
     "linear": {
       "enabled": true
     },
@@ -13,9 +10,6 @@
       "enabled": true
     },
     "composio": {
-      "enabled": true
-    },
-    "shaders": {
       "enabled": true
     }
   }

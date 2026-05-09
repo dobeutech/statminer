@@ -1,0 +1,104 @@
+{
+  "_comment": "Dobeu Design System v1 — bootstrapped by remote agent on 2026-05-09. Figma node IDs are PLACEHOLDERS; replace each 'TODO:node-id-<name>' with the actual Figma component-set node ID once retrieved from the Figma file.",
+  "version": "v1",
+  "figmaFileKey": "193X6tO3TiytpWSNf11Ae7",
+  "auditBaseline": {
+    "status": "pending-live-audit",
+    "note": "Token sweep and contrast recheck must be run interactively inside the Figma desktop plugin. Remote agent has no Figma MCP access."
+  },
+  "components": {
+    "Icon": {
+      "key": "TODO:node-id-Icon",
+      "properties": {
+        "Name": "VARIANT",
+        "Size": "VARIANT"
+      }
+    },
+    "Button": {
+      "key": "TODO:node-id-Button",
+      "properties": {
+        "Label": "TEXT",
+        "Variant": "VARIANT",
+        "Size": "VARIANT",
+        "State": "VARIANT"
+      }
+    },
+    "Badge": {
+      "key": "TODO:node-id-Badge",
+      "properties": {
+        "Label": "TEXT",
+        "Variant": "VARIANT",
+        "Size": "VARIANT"
+      }
+    },
+    "Avatar": {
+      "key": "TODO:node-id-Avatar",
+      "properties": {
+        "Initials": "TEXT",
+        "Size": "VARIANT"
+      }
+    },
+    "Checkbox": {
+      "key": "TODO:node-id-Checkbox",
+      "properties": {
+        "Label": "TEXT",
+        "State": "VARIANT",
+        "Size": "VARIANT"
+      }
+    },
+    "Radio": {
+      "key": "TODO:node-id-Radio",
+      "properties": {
+        "Label": "TEXT",
+        "State": "VARIANT",
+        "Size": "VARIANT"
+      }
+    },
+    "Toggle": {
+      "key": "TODO:node-id-Toggle",
+      "properties": {
+        "State": "VARIANT",
+        "Size": "VARIANT"
+      }
+    },
+    "Input": {
+      "key": "TODO:node-id-Input",
+      "properties": {
+        "Placeholder": "TEXT",
+        "Label": "TEXT",
+        "State": "VARIANT",
+        "Size": "VARIANT"
+      }
+    },
+    "Textarea": {
+      "key": "TODO:node-id-Textarea",
+      "properties": {
+        "Placeholder": "TEXT",
+        "Label": "TEXT",
+        "State": "VARIANT"
+      }
+    },
+    "Tag": {
+      "key": "TODO:node-id-Tag",
+      "properties": {
+        "Label": "TEXT",
+        "Variant": "VARIANT"
+      }
+    },
+    "Card": {
+      "key": "TODO:node-id-Card",
+      "properties": {
+        "Title": "TEXT",
+        "Body": "TEXT",
+        "Variant": "VARIANT"
+      }
+    },
+    "Tooltip": {
+      "key": "TODO:node-id-Tooltip",
+      "properties": {
+        "Content": "TEXT",
+        "Position": "VARIANT"
+      }
+    }
+  }
+}

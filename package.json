@@ -23,7 +23,7 @@
     "next-auth": "^4.24.11",
     "pino": "^8.17.0",
     "pino-pretty": "^10.3.0",
-    "posthog-js": "^1.100.0",
+    "posthog-js": "^1.388.1",
     "react": "^18",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18",

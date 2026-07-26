@@ -20,7 +20,7 @@
     "lucide-react": "^0.344.0",
     "neo4j-driver": "^5.15.0",
     "next": "14.2.20",
-    "next-auth": "^4.24.11",
+    "next-auth": "^4.24.15",
     "pino": "^8.17.0",
     "pino-pretty": "^10.3.0",
     "posthog-js": "^1.100.0",

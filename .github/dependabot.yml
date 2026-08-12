@@ -1,39 +1,68 @@
-# Dependabot configuration for StatMiner
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  # Main application dependencies
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "npm"
-    commit-message:
-      prefix: "deps"
-
-  # Firebase functions dependencies
-  - package-ecosystem: "npm"
-    directory: "/functions"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "functions"
-    commit-message:
-      prefix: "deps(functions)"
-
-  # GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
-      - "ci"
-    commit-message:
-      prefix: "ci"
+- package-ecosystem: npm
+  directory: /
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10
+  labels:
+  - dependencies
+  - npm
+  commit-message:
+    prefix: deps
+  groups:
+    all-minor-patch:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+    all-major:
+      patterns:
+      - '*'
+      update-types:
+      - major
+- package-ecosystem: npm
+  directory: /functions
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 5
+  labels:
+  - dependencies
+  - functions
+  commit-message:
+    prefix: deps(functions)
+  groups:
+    all-minor-patch:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+    all-major:
+      patterns:
+      - '*'
+      update-types:
+      - major
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: weekly
+  labels:
+  - dependencies
+  - ci
+  commit-message:
+    prefix: ci
+  groups:
+    all-minor-patch:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+    all-major:
+      patterns:
+      - '*'
+      update-types:
+      - major
+  open-pull-requests-limit: 5

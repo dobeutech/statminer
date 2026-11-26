@@ -100,7 +100,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                           onChange={(e) => onProviderToggle(provider.id, e.target.checked)}
                         />
                         <div className={`
-                          w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 
+                          w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4
                           peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-800 
                           rounded-full peer dark:bg-gray-700 
                           ${isActive ? 'peer-checked:bg-cyan-600' : ''}
@@ -138,7 +138,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                 <Dialog.Close asChild>
                   <button
                     type="button"
-                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                   >
                     Done
                   </button>

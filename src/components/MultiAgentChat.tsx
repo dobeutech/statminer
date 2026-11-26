@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Tabs from '@radix-ui/react-tabs';
 import { AgentTab, ChatViewMode, ChatMessage, LLMProvider, StreamingResponse } from '@/types';
@@ -17,8 +17,9 @@ interface MultiAgentChatProps {
 const MultiAgentChat: React.FC<MultiAgentChatProps> = ({ sessionId }) => {
   const [viewMode, setViewMode] = useState<ChatViewMode['type']>('tabs');
   const [activeProviders, setActiveProviders] = useState<string[]>(['openai', 'anthropic']);
-  const [agentTabs, setAgentTabs] = useState<AgentTab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string>('');
+  const [streamingProviders, setStreamingProviders] = useState<string[]>([]);
+  const [selectedTabId, setActiveTabId] = useState<string>('');
+  const activeTabId = selectedTabId || activeProviders[0] || '';
 
   const { 
     sendMessage, 
@@ -35,34 +36,20 @@ const MultiAgentChat: React.FC<MultiAgentChatProps> = ({ sessionId }) => {
     onError: (error) => console.error('WebSocket error:', error),
   });
 
-  // Initialize agent tabs when providers change
-  useEffect(() => {
-    const tabs = activeProviders.map(providerId => {
-      const provider = providers.find(p => p.id === providerId);
-      return {
-        id: providerId,
-        providerId,
-        name: provider?.name || providerId,
-        isActive: providerId === activeProviders[0],
-        messages: messages.filter(m => m.providerId === providerId),
-        isStreaming: false,
-      };
-    });
-    setAgentTabs(tabs);
-    if (tabs.length > 0 && !activeTabId) {
-      setActiveTabId(tabs[0].id);
-    }
-  }, [activeProviders, providers, messages]);
+  const agentTabs: AgentTab[] = activeProviders.map(providerId => ({
+    id: providerId,
+    providerId,
+    name: providers.find(p => p.id === providerId)?.name || providerId,
+    isActive: providerId === activeProviders[0],
+    messages: messages.filter(m => m.providerId === providerId),
+    isStreaming: streamingProviders.includes(providerId),
+  }));
 
   function handleWebSocketMessage(message: StreamingResponse) {
     if (message.isComplete) {
       // Handle complete message
       updateMessage(message.providerId, message.chunk);
-      setAgentTabs(prev => prev.map(tab => 
-        tab.providerId === message.providerId 
-          ? { ...tab, isStreaming: false }
-          : tab
-      ));
+      setStreamingProviders(prev => prev.filter(id => id !== message.providerId));
     } else {
       // Handle streaming chunk
       addMessage({
@@ -88,7 +75,7 @@ const MultiAgentChat: React.FC<MultiAgentChatProps> = ({ sessionId }) => {
     addMessage(userMessage);
     
     // Mark all tabs as streaming
-    setAgentTabs(prev => prev.map(tab => ({ ...tab, isStreaming: true })));
+    setStreamingProviders(activeProviders);
 
     // Send to all active providers via WebSocket if connected, otherwise use HTTP
     if (isConnected) {
@@ -108,8 +95,8 @@ const MultiAgentChat: React.FC<MultiAgentChatProps> = ({ sessionId }) => {
         await sendMessage(content, activeProviders, sessionId);
       } catch (error) {
         console.error('Failed to send message:', error);
-        // Reset streaming state on error
-        setAgentTabs(prev => prev.map(tab => ({ ...tab, isStreaming: false })));
+      } finally {
+        setStreamingProviders([]);
       }
     }
   }, [activeProviders, sessionId, isConnected, sendMessage, sendWebSocket, addMessage]);
@@ -253,21 +240,21 @@ const MultiAgentChat: React.FC<MultiAgentChatProps> = ({ sessionId }) => {
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setViewMode('tabs')}
-              className={`p-2 rounded ${viewMode === 'tabs' ? 'bg-cyan-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+              className={`p-2 rounded-sm ${viewMode === 'tabs' ? 'bg-cyan-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
               title="Tab View"
             >
               📑
             </button>
             <button
               onClick={() => setViewMode('quad')}
-              className={`p-2 rounded ${viewMode === 'quad' ? 'bg-cyan-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+              className={`p-2 rounded-sm ${viewMode === 'quad' ? 'bg-cyan-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
               title="Quad View"
             >
               ⊞
             </button>
             <button
               onClick={() => setViewMode('comparison')}
-              className={`p-2 rounded ${viewMode === 'comparison' ? 'bg-cyan-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+              className={`p-2 rounded-sm ${viewMode === 'comparison' ? 'bg-cyan-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
               title="Comparison View"
             >
               ⚖️

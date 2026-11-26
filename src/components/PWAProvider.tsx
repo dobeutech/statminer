@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { 
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import {
   registerServiceWorker,
   requestPersistentStorage,
-  setupNetworkStatusMonitoring,
   requestNotificationPermission,
   checkForUpdates,
 } from '@/lib/pwa/register-sw';
@@ -18,6 +17,27 @@ interface PWAContextType {
   requestNotifications: () => void;
 }
 
+const subscribeOnline = (notify: () => void) => {
+  window.addEventListener('online', notify);
+  window.addEventListener('offline', notify);
+  return () => {
+    window.removeEventListener('online', notify);
+    window.removeEventListener('offline', notify);
+  };
+};
+const subscribeInstalled = (notify: () => void) => {
+  const media = window.matchMedia('(display-mode: standalone)');
+  media.addEventListener('change', notify);
+  window.addEventListener('appinstalled', notify);
+  return () => {
+    media.removeEventListener('change', notify);
+    window.removeEventListener('appinstalled', notify);
+  };
+};
+const getInstalled = () => Boolean(window.matchMedia('(display-mode: standalone)').matches ||
+  (window.navigator as Navigator & { standalone?: boolean }).standalone ||
+  document.referrer.includes('android-app://'));
+
 const PWAContext = React.createContext<PWAContextType | null>(null);
 
 interface PWAProviderProps {
@@ -25,25 +45,33 @@ interface PWAProviderProps {
 }
 
 const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
-  const [isOnline, setIsOnline] = useState(true);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const isOnline = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
+  const [installedByEvent, setInstalledByEvent] = useState(false);
+  const installedInBrowser = useSyncExternalStore(subscribeInstalled, getInstalled, () => false);
+  const isInstalled = installedByEvent || installedInBrowser;
   const [canInstall, setCanInstall] = useState(false);
   const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
+    async function initializePWA() {
+      // Register service worker
+      await registerServiceWorker();
+
+      // Request persistent storage
+      await requestPersistentStorage();
+
+      // Check for updates
+      checkForUpdates();
+
+      // Check notification permission
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setHasNotificationPermission(Notification.permission === 'granted');
+      }
+    }
+
     // Initialize PWA features
     initializePWA();
-    
-    // Setup network monitoring
-    const initialOnline = setupNetworkStatusMonitoring(
-      () => setIsOnline(true),
-      () => setIsOnline(false)
-    );
-    setIsOnline(initialOnline);
-
-    // Check if app is installed
-    checkIfInstalled();
 
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -54,7 +82,7 @@ const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
 
     // Listen for app installed
     const handleAppInstalled = () => {
-      setIsInstalled(true);
+      setInstalledByEvent(true);
       setCanInstall(false);
       setDeferredPrompt(null);
     };
@@ -68,43 +96,17 @@ const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const initializePWA = async () => {
-    // Register service worker
-    await registerServiceWorker();
-    
-    // Request persistent storage
-    await requestPersistentStorage();
-    
-    // Check for updates
-    checkForUpdates();
-    
-    // Check notification permission
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setHasNotificationPermission(Notification.permission === 'granted');
-    }
-  };
-
-  const checkIfInstalled = () => {
-    if (typeof window !== 'undefined') {
-      // Check if running in standalone mode
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                           (window.navigator as any).standalone ||
-                           document.referrer.includes('android-app://');
-      setIsInstalled(isStandalone);
-    }
-  };
-
   const promptInstall = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      
+
       if (outcome === 'accepted') {
         console.log('PWA install accepted');
       } else {
         console.log('PWA install dismissed');
       }
-      
+
       setDeferredPrompt(null);
       setCanInstall(false);
     }
@@ -156,7 +158,7 @@ const InstallPrompt: React.FC<{ onInstall: () => void }> = ({ onInstall }) => {
   return (
     <div className="fixed bottom-4 left-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50 max-w-sm mx-auto">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shrink-0">
           <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
           </svg>
@@ -171,7 +173,7 @@ const InstallPrompt: React.FC<{ onInstall: () => void }> = ({ onInstall }) => {
           <div className="flex gap-2 mt-3">
             <button
               onClick={onInstall}
-              className="text-xs bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-1 rounded font-medium"
+              className="text-xs bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-1 rounded-sm font-medium"
             >
               Install
             </button>

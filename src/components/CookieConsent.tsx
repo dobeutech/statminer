@@ -1,28 +1,32 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CONSENT_KEY = 'statminer-cookie-consent';
 
-export default function CookieConsent() {
-  const [visible, setVisible] = useState(false);
+const subscribeConsent = (notify: () => void) => {
+  window.addEventListener('storage', notify);
+  return () => window.removeEventListener('storage', notify);
+};
 
-  useEffect(() => {
-    const consent = localStorage.getItem(CONSENT_KEY);
-    if (!consent) {
-      setVisible(true);
-    }
-  }, []);
+export default function CookieConsent() {
+  const [dismissed, setDismissed] = useState(false);
+  const needsConsent = useSyncExternalStore(
+    subscribeConsent,
+    () => !localStorage.getItem(CONSENT_KEY),
+    () => false,
+  );
+  const visible = needsConsent && !dismissed;
 
   const accept = () => {
     localStorage.setItem(CONSENT_KEY, 'accepted');
-    setVisible(false);
+    setDismissed(true);
   };
 
   const decline = () => {
     localStorage.setItem(CONSENT_KEY, 'declined');
-    setVisible(false);
+    setDismissed(true);
   };
 
   return (

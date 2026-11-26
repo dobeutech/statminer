@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Dialog from '@radix-ui/react-dialog';
 import { LLMProvider, ApiKeyConfigSchema } from '@/types';
@@ -12,21 +12,18 @@ interface ApiKeyPromptProps {
 }
 
 const ApiKeyPrompt: React.FC<ApiKeyPromptProps> = ({ providers, onApiKeysConfigured }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(providers.some(p => !p.apiKey));
+  const [previousProviders, setPreviousProviders] = useState(providers);
+  if (previousProviders !== providers) {
+    setPreviousProviders(providers);
+    if (providers.some(p => !p.apiKey)) setIsOpen(true);
+  }
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
   const { updateProvider } = useChatStore();
-
-  // Check for missing API keys on mount
-  useEffect(() => {
-    const missingKeys = providers.filter(p => !p.apiKey || p.apiKey.length === 0);
-    if (missingKeys.length > 0) {
-      setIsOpen(true);
-    }
-  }, [providers]);
 
   const missingProviders = providers.filter(p => !p.apiKey || p.apiKey.length === 0);
   const totalSteps = missingProviders.length;
